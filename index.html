@@ -4,8 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
+    <meta name="referrer" content="no-referrer" />
     <link rel="icon" href="data:," />
-    <title>役次元跟拍連線測試</title>
+    <title>役次元跟拍連線</title>
     <style>
       :root {
         color-scheme: dark;
@@ -18,6 +19,8 @@
         --accent: #f5a524;
         --accent-text: #1a1206;
         --ok: #3ecf7a;
+        --rest: #5aa9ff;
+        --rest-bg: #14243a;
         --danger: #e5484d;
         --danger-dark: #b3232a;
         --err-text: #ff8589;
@@ -38,91 +41,91 @@
       main {
         max-width: 560px;
         margin: 0 auto;
-        padding: 14px 14px 40px;
+        padding: 14px 16px 40px;
         display: flex;
         flex-direction: column;
         gap: 14px;
       }
 
-      /* ── Sticky stop bar ─────────────────────────────── */
-      #stopBar {
+      /* ── 固定在上方的停止列 ─────────────────────────── */
+      #topBar {
         position: sticky;
         top: 0;
         z-index: 50;
         display: none;
-        padding: 10px 14px;
-        background: rgba(15, 18, 22, 0.92);
+        padding: 10px 16px;
+        background: rgba(15, 18, 22, 0.94);
         backdrop-filter: blur(6px);
         border-bottom: 1px solid var(--border);
       }
-      #stopBar.visible { display: block; }
-      #stopBtn {
-        width: 100%;
-        max-width: 560px;
-        margin: 0 auto;
-        display: block;
-        padding: 16px;
+      #topBar.visible { display: block; }
+      .top-inner { max-width: 560px; margin: 0 auto; display: flex; gap: 10px; }
+      #stopAllBtn {
+        flex: 2;
+        padding: 16px 8px;
         font-size: 19px;
         font-weight: 800;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.08em;
         color: #fff;
         background: var(--danger);
         border: 1px solid var(--danger-dark);
         border-radius: 12px;
         cursor: pointer;
-        touch-action: manipulation;
       }
-      #stopBtn:active { background: var(--danger-dark); }
+      #stopAllBtn:active { background: var(--danger-dark); }
+      #restBtn {
+        flex: 1;
+        padding: 16px 8px;
+        font-size: 17px;
+        font-weight: 800;
+        color: var(--rest);
+        background: var(--rest-bg);
+        border: 2px solid var(--rest);
+        border-radius: 12px;
+        cursor: pointer;
+      }
+      #restBtn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-      /* ── Cards ───────────────────────────────────────── */
+      /* ── 休息中橫幅 ─────────────────────────────────── */
+      #restPanel {
+        display: none;
+        margin-top: 10px;
+        padding: 12px;
+        border: 2px solid var(--rest);
+        background: var(--rest-bg);
+        border-radius: 12px;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      #restPanel.visible { display: block; }
+      .rest-title { font-weight: 800; color: var(--rest); font-size: 17px; }
+      #restCountdown { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; margin: 2px 0; }
+      #restResumeText { font-size: 14px; color: var(--text); }
+      .rest-actions { display: flex; gap: 10px; margin-top: 10px; }
+      .rest-actions .btn { padding: 11px 8px; font-size: 15px; }
+
+      /* ── 卡片 ───────────────────────────────────────── */
       .card {
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius-card);
         padding: 16px;
       }
-      .card h2 {
-        margin: 0 0 12px;
-        font-size: 15px;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        color: var(--text);
-      }
-      .hint {
-        margin: 10px 0 0;
-        font-size: 13px;
-        color: var(--muted);
-      }
+      .card h2 { margin: 0 0 12px; font-size: 15px; font-weight: 700; letter-spacing: 0.04em; }
+      .hint { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
 
-      /* ── Status ──────────────────────────────────────── */
-      .status-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .dot {
-        width: 12px; height: 12px;
-        border-radius: 50%;
-        background: #5b6672;
-        flex: none;
-      }
+      .status-row { display: flex; align-items: center; gap: 10px; }
+      .dot { width: 12px; height: 12px; border-radius: 50%; background: #5b6672; flex: none; }
       .dot.connecting { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
       .dot.connected { background: var(--ok); }
       @keyframes pulse { 50% { opacity: 0.35; } }
-      @media (prefers-reduced-motion: reduce) {
-        .dot.connecting { animation: none; }
-      }
+      @media (prefers-reduced-motion: reduce) { .dot.connecting { animation: none; } }
       #statusText { font-size: 17px; font-weight: 700; }
       #statusUid { color: var(--muted); font-size: 14px; margin-left: auto; font-variant-numeric: tabular-nums; }
 
-      /* ── Forms & buttons ─────────────────────────────── */
-      label.field-label {
-        display: block;
-        font-size: 13px;
-        color: var(--muted);
-        margin-bottom: 6px;
-      }
-      input[type="text"] {
+      label.field-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+      input[type="text"], select {
         width: 100%;
         padding: 12px;
         font-size: 16px;
@@ -131,14 +134,12 @@
         border: 1px solid var(--border);
         border-radius: var(--radius-btn);
         outline: none;
+        font-family: inherit;
       }
-      input[type="text"]:focus { border-color: var(--accent); }
+      input[type="text"]:focus, select:focus { border-color: var(--accent); }
       input[type="text"]:disabled { opacity: 0.55; }
       .btn-row { display: flex; gap: 10px; margin-top: 12px; }
-      button {
-        font-family: inherit;
-        touch-action: manipulation;
-      }
+      button { font-family: inherit; touch-action: manipulation; }
       .btn {
         flex: 1;
         padding: 13px 10px;
@@ -151,95 +152,80 @@
         cursor: pointer;
       }
       .btn:active { filter: brightness(1.25); }
-      .btn.primary {
-        background: var(--accent);
-        border-color: var(--accent);
-        color: var(--accent-text);
-      }
+      .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
       .btn:disabled { opacity: 0.45; cursor: not-allowed; }
       .connect-msg {
         margin: 12px 0 0;
         padding: 10px 12px;
         font-size: 14px;
-        line-height: 1.5;
         color: var(--err-text);
         background: #2a1416;
         border: 1px solid var(--danger-dark);
         border-radius: var(--radius-btn);
         overflow-wrap: anywhere;
       }
+      .cc-age { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
 
-      /* ── Game type mode ──────────────────────────────── */
-      .mode-row { display: flex; gap: 10px; margin-top: 6px; }
-      .mode-btn {
-        flex: 1;
-        padding: 11px 8px;
-        font-size: 15px;
-        font-weight: 700;
-        border-radius: var(--radius-btn);
-        border: 1px solid var(--border);
-        background: var(--surface-2);
-        color: var(--muted);
-        cursor: pointer;
-      }
-      .mode-btn.active {
-        border-color: var(--accent);
-        color: var(--accent);
-        background: #262019;
-      }
-
-      /* ── Instruction grid ────────────────────────────── */
-      .cmd-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-      }
+      .cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
       .cmd-btn {
-        padding: 14px 8px 11px;
+        padding: 14px 8px;
         background: var(--surface-2);
         border: 1px solid var(--border);
         border-radius: var(--radius-btn);
         color: var(--text);
         cursor: pointer;
         text-align: center;
+        font-size: 17px;
+        font-weight: 700;
       }
       .cmd-btn:active { border-color: var(--accent); background: #262019; }
-      .cmd-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-      .cmd-btn .cmd-name { display: block; font-size: 17px; font-weight: 700; }
-      .cmd-btn .cmd-id {
-        display: block;
-        margin-top: 2px;
-        font-size: 12px;
-        color: var(--muted);
-        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-      }
-      .cmd-btn.stop-cmd {
-        grid-column: 1 / -1;
-        border: 2px solid var(--danger);
-        color: var(--err-text);
-      }
-      .cmd-btn.stop-cmd:active { border-color: var(--danger); background: #2a1416; }
-      .cmd-btn.stop-cmd .cmd-id { color: var(--err-text); opacity: 0.75; }
-      .free-row { display: flex; gap: 10px; margin-top: 12px; }
-      .free-row input { flex: 1; }
-      .free-row .btn { flex: none; padding-left: 20px; padding-right: 20px; }
+      .cmd-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+      .cmd-btn.last-cup { border-color: var(--ok); box-shadow: inset 0 0 0 1px var(--ok); }
+      .cmd-btn.shock { border-color: #6b4a1e; }
+      .cmd-btn.stop-cmd { grid-column: 1 / -1; border: 2px solid var(--danger); color: var(--err-text); }
+      .lock-note { display: none; margin: 10px 0 0; font-size: 13px; color: var(--rest); }
+      .lock-note.visible { display: block; }
+      .rest-setting { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+      .rest-setting label { margin: 0; flex: none; }
+      .rest-setting select { width: auto; padding: 8px 10px; font-size: 15px; }
 
-      /* ── Log ─────────────────────────────────────────── */
-      .log-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 10px;
-      }
+      /* ── 影片同步 ─────────────────────────────────── */
+      main.wide { max-width: 960px; }
+      #video { width: 100%; max-height: 60vh; background: #000; border-radius: 10px; display: block; }
+      .src-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+      .src-row input[type="text"] { flex: 1 1 220px; }
+      .src-row .btn { flex: 0 0 auto; padding-left: 16px; padding-right: 16px; }
+      .file-btn { position: relative; overflow: hidden; }
+      .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+      .sync-toggle { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-weight: 700; }
+      .sync-toggle input { width: 22px; height: 22px; accent-color: var(--ok); }
+      .now-box { margin-top: 12px; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; }
+      #nowSeg { font-size: 20px; font-weight: 800; }
+      #nowCmd { font-size: 14px; color: var(--muted); margin-top: 2px; }
+      #nextSeg { font-size: 14px; color: var(--text); margin-top: 6px; font-variant-numeric: tabular-nums; }
+      .warn { color: var(--accent); font-size: 13px; margin: 8px 0 0; }
+      details.map-box { margin-top: 12px; }
+      details.map-box summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+      .map-grid { display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; margin-top: 10px; font-size: 14px; }
+      .map-grid select { padding: 8px; font-size: 14px; }
+      .map-pair { display: flex; gap: 6px; min-width: 0; }
+      .map-pair select { flex: 1 1 0; min-width: 0; }
+      .seg-list { margin-top: 10px; max-height: 220px; overflow-y: auto; font-size: 13px; font-variant-numeric: tabular-nums;
+                  border: 1px solid var(--border); border-radius: 10px; }
+      .seg-list div { display: flex; gap: 10px; padding: 5px 10px; cursor: pointer; border-bottom: 1px solid #20262e; }
+      .seg-list div:last-child { border-bottom: none; }
+      .seg-list div.cur { background: #1d2a1f; color: var(--ok); font-weight: 700; }
+      .seg-list .tm { color: var(--muted); flex: none; width: 92px; }
+      .seg-list div.cur .tm { color: var(--ok); }
+
+      .check-list { margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted); }
+      .check-list li { margin: 4px 0; }
+
+      .log-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
       .log-head h2 { margin: 0; }
       #clearLogBtn {
-        background: none;
-        border: 1px solid var(--border);
-        color: var(--muted);
-        font-size: 13px;
-        padding: 5px 12px;
-        border-radius: 8px;
-        cursor: pointer;
+        background: none; border: 1px solid var(--border); color: var(--muted);
+        font-size: 13px; padding: 5px 12px; border-radius: 8px; cursor: pointer;
       }
       #log {
         height: 260px;
@@ -257,18 +243,30 @@
       #log .k-ok { color: var(--ok); }
       #log .k-err { color: var(--err-text); }
       #log .k-send { color: var(--send-text); }
+      #log .k-rest { color: var(--rest); }
       #log .k-info { color: #c3cdd8; }
       #log .empty { color: #5f6d7c; }
     </style>
   </head>
   <body>
-    <!-- 全部停止：連線後固定在畫面最上方 -->
-    <div id="stopBar">
-      <button id="stopBtn" type="button">■ 全部停止 STOP</button>
+    <!-- 連線後固定在最上方：全部停止＋休息 -->
+    <div id="topBar">
+      <div class="top-inner">
+        <button id="stopAllBtn" type="button">■ 全部停止</button>
+        <button id="restBtn" type="button">休息</button>
+      </div>
+      <div id="restPanel" role="status" aria-live="polite">
+        <div class="rest-title">休息中：杯子已停止，暫停送杯子指令</div>
+        <div id="restCountdown">15</div>
+        <div id="restResumeText"></div>
+        <div class="rest-actions">
+          <button class="btn" id="restResumeNowBtn" type="button">提早結束並恢復</button>
+          <button class="btn" id="restCancelBtn" type="button">結束休息，不恢復</button>
+        </div>
+      </div>
     </div>
 
     <main>
-      <!-- 連線狀態 -->
       <section class="card" aria-label="連線狀態">
         <div class="status-row">
           <span class="dot" id="statusDot"></span>
@@ -277,82 +275,108 @@
         </div>
       </section>
 
-      <!-- 連接碼 / 連線 -->
       <section class="card" aria-label="連線設定">
-        <h2>連線設定</h2>
-        <label class="field-label" for="codeInput">連接碼（從役次元 APP 複製，格式：UID 空格 Token）</label>
-        <input type="text" id="codeInput" placeholder="例如：123456 abcdef…" autocomplete="off" autocapitalize="off" spellcheck="false" />
+        <h2>連線</h2>
+        <label class="field-label" for="codeInput">連接碼（格式：UID 空格 Token）</label>
+        <input type="text" id="codeInput" placeholder="從役次元 APP 複製" autocomplete="off" autocapitalize="off" spellcheck="false" />
         <div class="btn-row">
           <button class="btn primary" id="connectBtn" type="button">連線</button>
           <button class="btn" id="disconnectBtn" type="button" disabled>斷線</button>
+          <button class="btn" id="forgetBtn" type="button">清除連接碼</button>
         </div>
+        <p id="ccAge" class="cc-age" hidden></p>
         <p id="connectMsg" class="connect-msg" role="alert" hidden></p>
-        <p class="hint">從 APP 內啟動本頁時，連接碼會自動帶入，不用手動貼上。</p>
-        <label class="field-label" style="margin-top: 14px;">遊戲類型（決定送出的指令格式，選錯裝置不會動）</label>
-        <div class="mode-row" role="group" aria-label="遊戲類型">
-          <button class="mode-btn" id="modeCustomBtn" type="button">自定義遊戲（序號）</button>
-          <button class="mode-btn" id="modeDevBtn" type="button">開發遊戲（ID）</button>
-        </div>
-        <p class="hint">在 APP 裡逐條編輯「指令配置」的遊戲選「自定義遊戲」：按鈕送出的是序號，也就是指令在 APP 清單裡由上往下數的位置，從 0 開始。</p>
+        <p class="hint">從 APP 按「開始遊戲」打開本頁時，連接碼會自動帶入，按「連線」即可。同一組連接碼同時只能有一個地方連線，電腦和手機會互相踢下線。</p>
       </section>
 
-      <!-- 指令測試 -->
-      <section class="card" aria-label="指令測試">
-        <h2>指令測試</h2>
+      <section class="card" aria-label="影片同步">
+        <h2>影片同步</h2>
+        <video id="video" controls playsinline preload="metadata"></video>
+        <div class="src-row">
+          <input type="text" id="videoUrl" placeholder="貼上影片連結（.m3u8 或 .mp4）" autocomplete="off" spellcheck="false" />
+          <button class="btn" id="loadUrlBtn" type="button">載入連結</button>
+          <label class="btn file-btn">選擇影片檔<input type="file" id="videoFile" accept="video/*,.m3u8" /></label>
+        </div>
+        <p class="warn" id="videoWarn" hidden></p>
+        <label class="sync-toggle"><input type="checkbox" id="syncOn" /> 讓設備跟著影片動</label>
+        <div class="now-box">
+          <div id="nowSeg">—</div>
+          <div id="nowCmd">勾選上面的「讓設備跟著影片動」並按播放，就會照時間軸自動送指令。</div>
+          <div id="nextSeg"></div>
+        </div>
+        <div class="rest-setting">
+          <label class="field-label" for="leadSecs">提早送出</label>
+          <select id="leadSecs">
+            <option value="0">0 秒</option>
+            <option value="0.5" selected>0.5 秒</option>
+            <option value="1">1 秒</option>
+            <option value="1.5">1.5 秒</option>
+            <option value="2">2 秒</option>
+          </select>
+          <span class="hint" style="margin:0">補償網路延遲；覺得設備比影片慢就調大</span>
+        </div>
+        <details class="map-box">
+          <summary>段落對應的指令（可改）</summary>
+          <div class="map-grid" id="mapGrid"></div>
+          <p class="hint">每種段落可以各選一條杯子指令和一條電擊。杯子只跟擼動類段落走；電擊預設只在影片浮標是「拍打」的兩種段落介入（拍打弱），其他都「不電」。指令在段落裡每 50 秒續送一次（APP 每條指令跑 60 秒）。「不送指令」：進到這段什麼都不送，前一段的指令會跑到 APP 設定的秒數自己停。</p>
+        </details>
+        <details class="map-box">
+          <summary>全部段落（點一下跳到該段）</summary>
+          <div class="seg-list" id="segList"></div>
+        </details>
+        <p class="hint">暫停、拖曳進度條、影片結束：設備會先停，繼續播放時再對到當下的段落。按「全部停止」會一併暫停影片。</p>
+      </section>
+
+      <section class="card" aria-label="杯子指令">
+        <h2>杯子</h2>
         <div class="cmd-grid">
-          <button class="cmd-btn" type="button" data-cmd="伸縮慢" data-idx="0" disabled>
-            <span class="cmd-name">伸縮慢</span><span class="cmd-id">伸縮慢</span>
-          </button>
-          <button class="cmd-btn" type="button" data-cmd="伸縮中" data-idx="1" disabled>
-            <span class="cmd-name">伸縮中</span><span class="cmd-id">伸縮中</span>
-          </button>
-          <button class="cmd-btn" type="button" data-cmd="伸縮快" data-idx="2" disabled>
-            <span class="cmd-name">伸縮快</span><span class="cmd-id">伸縮快</span>
-          </button>
-          <button class="cmd-btn" type="button" data-cmd="伸縮极快" data-idx="3" disabled>
-            <span class="cmd-name">伸縮极快</span><span class="cmd-id">伸縮极快</span>
-          </button>
-          <button class="cmd-btn" type="button" data-cmd="旋轉吸吮" data-idx="4" disabled>
-            <span class="cmd-name">旋轉吸吮</span><span class="cmd-id">旋轉吸吮</span>
-          </button>
-          <button class="cmd-btn" type="button" data-cmd="伸縮全速震動" data-idx="5" disabled>
-            <span class="cmd-name">伸縮全速震動</span><span class="cmd-id">伸縮全速震動</span>
-          </button>
-          <button class="cmd-btn stop-cmd" type="button" data-cmd="設備停止" data-idx="6" disabled>
-            <span class="cmd-name">設備停止</span><span class="cmd-id">設備停止</span>
-          </button>
+          <button class="cmd-btn cup-move" type="button" data-cmd="伸縮慢" disabled>伸縮慢</button>
+          <button class="cmd-btn cup-move" type="button" data-cmd="伸縮中" disabled>伸縮中</button>
+          <button class="cmd-btn cup-move" type="button" data-cmd="伸縮极快" disabled>伸縮极快</button>
+          <button class="cmd-btn cup-move" type="button" data-cmd="龜頭責" disabled>龜頭責</button>
+          <button class="cmd-btn cup-move" type="button" data-cmd="寸止射精" disabled>寸止射精</button>
+          <button class="cmd-btn stop-cmd" type="button" data-cmd="設備停止" id="cupStopBtn" disabled>設備停止</button>
         </div>
-        <div class="free-row">
-          <input type="text" id="freeIdInput" placeholder="自訂序號（數字）" autocomplete="off" autocapitalize="off" spellcheck="false" disabled />
-          <button class="btn" id="freeSendBtn" type="button" disabled>送出</button>
+        <p class="lock-note" id="cupLockNote">休息中，杯子指令暫停。</p>
+        <div class="rest-setting">
+          <label class="field-label" for="restSecs">休息秒數</label>
+          <select id="restSecs">
+            <option value="10">10 秒</option>
+            <option value="15" selected>15 秒</option>
+            <option value="20">20 秒</option>
+            <option value="30">30 秒</option>
+            <option value="45">45 秒</option>
+            <option value="60">60 秒</option>
+            <option value="90">90 秒</option>
+          </select>
         </div>
-        <p class="hint" id="cmdHint">自定義遊戲模式：按鈕送出的是序號，要和 APP 指令配置的順序一致（由上往下、從 0 開始）；「設備停止」要在 APP 加成第 7 條（序號 6）才有效。開發遊戲模式：送出的是 ID，要和 APP 裡建的指令 ID 一模一樣。</p>
+        <p class="hint">「休息」：杯子馬上停止，休息期間不送任何杯子指令；時間到自動補送一次休息前最後一條杯子指令（綠框那條）。休息前最後按的是「設備停止」，時間到就不恢復。影片同步中休息：影片照播，時間到改送影片當下段落的指令。</p>
+        <p class="lock-note" id="syncLockNote">影片同步中，杯子由時間軸控制；手動按鈕暫停（設備停止仍可按）。</p>
       </section>
 
-      <!-- 電擊指令 -->
       <section class="card" aria-label="電擊指令">
-        <h2>電擊指令（電擊設備）</h2>
+        <h2>電擊</h2>
         <div class="cmd-grid">
-          <button class="cmd-btn" type="button" data-cmd="拍打弱" data-idx="0" disabled>
-            <span class="cmd-name">拍打弱</span><span class="cmd-id">拍打弱</span>
-          </button>
-          <button class="cmd-btn" type="button" data-cmd="拍打中" data-idx="1" disabled>
-            <span class="cmd-name">拍打中</span><span class="cmd-id">拍打中</span>
-          </button>
-          <button class="cmd-btn" type="button" data-cmd="拍打強" data-idx="2" disabled>
-            <span class="cmd-name">拍打強</span><span class="cmd-id">拍打強</span>
-          </button>
-          <button class="cmd-btn stop-cmd" type="button" data-cmd="電擊停止" data-idx="3" disabled>
-            <span class="cmd-name">電擊停止</span><span class="cmd-id">電擊停止</span>
-          </button>
+          <button class="cmd-btn shock" type="button" data-cmd="拍打弱" disabled>⚡ 拍打弱</button>
+          <button class="cmd-btn shock" type="button" data-cmd="拍打中" disabled>⚡ 拍打中</button>
+          <button class="cmd-btn shock" type="button" data-cmd="拍打強" disabled>⚡ 拍打強</button>
+          <button class="cmd-btn stop-cmd" type="button" data-cmd="電擊停止" disabled>電擊停止</button>
         </div>
-        <p class="hint">這區是電擊設備的指令。自定義遊戲模式下，序號照該遊戲指令配置的順序：拍打弱 0、拍打中 1、拍打強 2、電擊停止 3；若你的電擊遊戲配置順序不同，用上方自訂序號送出。</p>
+        <p class="hint">電擊指令一次一發，不會自動重送，休息也不會補送電擊。按下後 2 秒內不能再按，避免誤觸連發。</p>
       </section>
 
-      <!-- 日誌 -->
-      <section class="card" aria-label="連線日誌">
+      <section class="card" aria-label="開始前檢查">
+        <h2>開始前檢查（每次重建遊戲或改過 APP 配置後都要做）</h2>
+        <ol class="check-list">
+          <li>按「伸縮慢」，杯子會動；再按「設備停止」，杯子會停。</li>
+          <li>按「⚡ 拍打弱」，電擊器燈閃；10 秒內按「電擊停止」，<strong>必須馬上停</strong>。沒停就是 APP 裡「電擊停止」沒設成「作動 1 秒、強度 0」，先去改好。</li>
+          <li>拍打中、拍打強各試一次，確認都會作動、也都停得下來。</li>
+        </ol>
+      </section>
+
+      <section class="card" aria-label="紀錄">
         <div class="log-head">
-          <h2>日誌</h2>
+          <h2>紀錄</h2>
           <button id="clearLogBtn" type="button">清除</button>
         </div>
         <div id="log" role="log" aria-live="polite"><div class="empty">尚無紀錄</div></div>
@@ -363,248 +387,254 @@
       (function () {
         'use strict';
 
+        /* ── 協定常數（依官方 YCY-YOKONEX-OpenSource / Instant Messaging，2026-11-17／18 實測驗證） ──
+           - game_sign：uid 傳 game_<uid>、token 分開傳；傳 connect_code 會 HTTP 500。
+           - IM 登入身分 game_<uid>；訊息收件人是裸 <uid>（APP 監聽的身分）。
+           - 開發遊戲只認 {"code":"game_cmd","id":<指令ID>,"token":<token>}；game_info 無效。
+           - 新指令會覆蓋正在執行的指令；「停止」= APP 裡設成「作動 1 秒、強度 0」的指令。
+           - _stop_all 官方標示「正在開發」，只當附加手段，不當唯一停止路徑。 */
         var SIGN_URL = 'https://suo.jiushu1234.com/api.php/user/game_sign';
-        var SDK_URL = 'https://cdn.jsdelivr.net/npm/@tencentcloud/chat@3.5.5/index.min.js';
-        var LS_KEY = 'ycy_connect_code';
-        var LS_MODE_KEY = 'ycy_game_mode';
+        var SDK_URLS = [
+          'https://cdn.jsdelivr.net/npm/@tencentcloud/chat@3.5.5/index.min.js',
+          'https://unpkg.com/@tencentcloud/chat@3.5.5/index.min.js'
+        ];
+        var CC_KEY = 'ycy_cc_v2';           // sessionStorage：關掉頁面就清掉
+        var OLD_LS_KEYS = ['ycy_connect_code', 'ycy_game_mode'];
+        var CUP_STOP = '設備停止';
+        var SHOCK_STOP = '電擊停止';
+        var SHOCK_COOLDOWN_MS = 2000;
 
+        var $ = function (id) { return document.getElementById(id); };
         var els = {
-          stopBar: document.getElementById('stopBar'),
-          stopBtn: document.getElementById('stopBtn'),
-          dot: document.getElementById('statusDot'),
-          statusText: document.getElementById('statusText'),
-          statusUid: document.getElementById('statusUid'),
-          codeInput: document.getElementById('codeInput'),
-          connectMsg: document.getElementById('connectMsg'),
-          connectBtn: document.getElementById('connectBtn'),
-          disconnectBtn: document.getElementById('disconnectBtn'),
-          freeIdInput: document.getElementById('freeIdInput'),
-          freeSendBtn: document.getElementById('freeSendBtn'),
-          modeCustomBtn: document.getElementById('modeCustomBtn'),
-          modeDevBtn: document.getElementById('modeDevBtn'),
-          log: document.getElementById('log'),
-          clearLogBtn: document.getElementById('clearLogBtn'),
-          cmdBtns: Array.prototype.slice.call(document.querySelectorAll('.cmd-btn'))
+          topBar: $('topBar'), stopAllBtn: $('stopAllBtn'), restBtn: $('restBtn'),
+          restPanel: $('restPanel'), restCountdown: $('restCountdown'), restResumeText: $('restResumeText'),
+          restResumeNowBtn: $('restResumeNowBtn'), restCancelBtn: $('restCancelBtn'), restSecs: $('restSecs'),
+          dot: $('statusDot'), statusText: $('statusText'), statusUid: $('statusUid'),
+          codeInput: $('codeInput'), connectBtn: $('connectBtn'), disconnectBtn: $('disconnectBtn'),
+          forgetBtn: $('forgetBtn'), ccAge: $('ccAge'), connectMsg: $('connectMsg'),
+          cupLockNote: $('cupLockNote'), log: $('log'), clearLogBtn: $('clearLogBtn'),
+          cmdBtns: Array.prototype.slice.call(document.querySelectorAll('.cmd-btn')),
+          cupMoveBtns: Array.prototype.slice.call(document.querySelectorAll('.cup-move')),
+          shockBtns: Array.prototype.slice.call(document.querySelectorAll('.cmd-btn.shock'))
         };
 
         var state = {
-          status: 'idle', // idle | connecting | connected
-          mode: 'custom', // custom = 自定義遊戲（game_info＋序號）| dev = 開發遊戲（game_cmd＋ID）
-          uid: '',
-          imId: '',
-          token: '',
-          chat: null,
-          watchdog: null,
-          sdkPromise: null
+          status: 'idle',       // idle | connecting | connected
+          uid: '', imId: '', token: '',
+          chat: null, watchdog: null, sdkPromise: null,
+          queue: [], sending: false,
+          lastCup: null,        // 最近一條「會動」的杯子指令；按過設備停止就清成 null
+          rest: null,           // { endAt, resume, timer }
+          shockCooldownUntil: 0
         };
 
-        /* ── 日誌 ─────────────────────────────────────── */
-        function nowTime() {
-          return new Date().toLocaleTimeString('zh-TW', { hour12: false });
-        }
+        /* ── 紀錄 ─────────────────────────────────────── */
+        function nowTime() { return new Date().toLocaleTimeString('zh-TW', { hour12: false }); }
         function logMsg(text, kind) {
           var empty = els.log.querySelector('.empty');
           if (empty) empty.remove();
           var line = document.createElement('div');
-          var t = document.createElement('span');
-          t.className = 't';
-          t.textContent = nowTime();
-          var m = document.createElement('span');
-          m.className = 'k-' + (kind || 'info');
-          m.textContent = text;
-          line.appendChild(t);
-          line.appendChild(m);
+          var t = document.createElement('span'); t.className = 't'; t.textContent = nowTime();
+          var m = document.createElement('span'); m.className = 'k-' + (kind || 'info'); m.textContent = text;
+          line.appendChild(t); line.appendChild(m);
           els.log.appendChild(line);
-          while (els.log.children.length > 200) els.log.removeChild(els.log.firstChild);
+          while (els.log.children.length > 300) els.log.removeChild(els.log.firstChild);
           els.log.scrollTop = els.log.scrollHeight;
         }
-        els.clearLogBtn.addEventListener('click', function () {
-          els.log.innerHTML = '<div class="empty">尚無紀錄</div>';
-        });
+        els.clearLogBtn.addEventListener('click', function () { els.log.innerHTML = '<div class="empty">尚無紀錄</div>'; });
+        function showConnectMsg(text) { els.connectMsg.textContent = text || ''; els.connectMsg.hidden = !text; }
 
-        /* ── 連線區即時訊息（不用滑到日誌也看得到） ────── */
-        function showConnectMsg(text) {
-          els.connectMsg.textContent = text || '';
-          els.connectMsg.hidden = !text;
-        }
-
-        /* ── 工具 ─────────────────────────────────────── */
+        /* ── 連接碼：網址讀完即清、只存 sessionStorage ── */
         function parseConnectCode(raw) {
           if (!raw) return null;
           var parts = String(raw).trim().split(/\s+/);
           if (parts.length < 2 || !parts[0] || !parts[1]) return null;
-          return { uid: parts[0], token: parts[1] };
+          var uid = parts[0].replace(/^game_/, '');
+          if (!/^\d+$/.test(uid)) return null;
+          return { uid: uid, token: parts[1] };
         }
-        function maskUid(uid) {
-          if (!uid) return '';
-          if (uid.length <= 4) return 'UID ••••';
-          return 'UID ' + uid.slice(0, 2) + '••••' + uid.slice(-2);
+        function maskUid(uid) { return uid ? 'UID ' + (uid.length <= 4 ? '••••' : uid.slice(0, 2) + '••' + uid.slice(-2)) : ''; }
+        function maskToken(tok) { return tok ? (tok.length <= 6 ? '••••' : tok.slice(0, 4) + '••••') : ''; }
+        function ageText(t) {
+          var s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+          return s < 60 ? s + ' 秒前' : s < 3600 ? Math.floor(s / 60) + ' 分鐘前' : Math.floor(s / 3600) + ' 小時前';
         }
-        function maskToken(token) {
-          if (!token) return '';
-          if (token.length <= 6) return '••••';
-          return token.slice(0, 4) + '••••';
+        function readAndScrubURL() {
+          var p = new URLSearchParams(location.search);
+          var code = p.get('connect_code') || p.get('connect_string');
+          if (!code && p.get('uid') && p.get('token')) code = p.get('uid') + ' ' + p.get('token');
+          if (!code) return null;
+          ['connect_code', 'connect_string', 'uid', 'token'].forEach(function (k) { p.delete(k); });
+          var qs = p.toString();
+          try { history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash); } catch (e) {}
+          return code;
+        }
+        function saveCC(code) { try { sessionStorage.setItem(CC_KEY, JSON.stringify({ v: code, t: Date.now() })); } catch (e) {} }
+        function loadCC() {
+          try { var r = JSON.parse(sessionStorage.getItem(CC_KEY) || 'null'); return r && r.v ? r : null; } catch (e) { return null; }
+        }
+        function clearCC() {
+          try { sessionStorage.removeItem(CC_KEY); } catch (e) {}
+          OLD_LS_KEYS.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+        }
+        var ccTimer = null;
+        function showCCAge(source, t) {
+          clearInterval(ccTimer);
+          var paint = function () { els.ccAge.textContent = '連接碼來源：' + source + '，取得於 ' + ageText(t); };
+          els.ccAge.hidden = false; paint(); ccTimer = setInterval(paint, 15000);
         }
 
         /* ── UI 狀態 ──────────────────────────────────── */
         function setStatus(status) {
           state.status = status;
           els.dot.className = 'dot' + (status === 'connecting' ? ' connecting' : status === 'connected' ? ' connected' : '');
-          els.statusText.textContent =
-            status === 'connected' ? '已連線' : status === 'connecting' ? '連線中…' : '未連線';
+          els.statusText.textContent = status === 'connected' ? '已連線' : status === 'connecting' ? '連線中…' : '未連線';
           els.statusUid.textContent = status === 'connected' ? maskUid(state.uid) : '';
-          els.stopBar.classList.toggle('visible', status === 'connected');
+          els.topBar.classList.toggle('visible', status === 'connected');
           if (status === 'connected') showConnectMsg('');
-
-          var isConnected = status === 'connected';
-          var isConnecting = status === 'connecting';
-          els.connectBtn.disabled = isConnected || isConnecting;
-          els.disconnectBtn.disabled = !(isConnected || isConnecting);
-          els.codeInput.disabled = isConnected || isConnecting;
-          els.cmdBtns.forEach(function (b) { b.disabled = !isConnected; });
-          els.freeIdInput.disabled = !isConnected;
-          els.freeSendBtn.disabled = !isConnected;
+          var on = status === 'connected', busy = status === 'connecting';
+          els.connectBtn.disabled = on || busy;
+          els.disconnectBtn.disabled = !(on || busy);
+          els.codeInput.disabled = on || busy;
+          if (!on) {
+            cancelRest('連線中斷，休息取消，不會自動恢復');
+            state.queue = [];
+            if (typeof pauseVideo === 'function' && status === 'idle') pauseVideo('連線中斷，影片暫停');
+          }
+          refreshButtons();
+        }
+        function refreshButtons() {
+          var on = state.status === 'connected';
+          var resting = !!state.rest;
+          var cooling = Date.now() < state.shockCooldownUntil;
+          els.cmdBtns.forEach(function (b) {
+            var isCupMove = b.classList.contains('cup-move');
+            var isShock = b.classList.contains('shock');
+            b.disabled = !on || (isCupMove && resting) || (isShock && cooling);
+            b.classList.toggle('last-cup', isCupMove && state.lastCup === b.getAttribute('data-cmd'));
+          });
+          var driving = typeof syncDriving === 'function' && syncDriving();
+          els.cupMoveBtns.forEach(function (b) { if (driving) b.disabled = true; });
+          els.restBtn.disabled = !on || resting;
+          els.cupLockNote.classList.toggle('visible', resting);
+          var sln = document.getElementById('syncLockNote');
+          if (sln) sln.classList.toggle('visible', driving && !resting);
         }
 
-        /* ── SDK 載入（動態注入官方 CDN 經典版） ───────── */
+        /* ── SDK 載入：失敗即移除標籤、換來源重試 ───── */
         function loadSDK() {
           if (window.TencentCloudChat) return Promise.resolve(window.TencentCloudChat);
           if (state.sdkPromise) return state.sdkPromise;
-          state.sdkPromise = new Promise(function (resolve, reject) {
-            var s = document.createElement('script');
-            s.src = SDK_URL;
-            s.onload = function () {
-              if (window.TencentCloudChat) resolve(window.TencentCloudChat);
-              else reject(new Error('SDK 載入完成但找不到 TencentCloudChat'));
-            };
-            s.onerror = function () {
-              state.sdkPromise = null;
-              reject(new Error('騰訊 IM SDK 載入失敗（CDN 無法連線）'));
-            };
-            document.head.appendChild(s);
-          });
+          var once = function (url) {
+            return new Promise(function (resolve, reject) {
+              var s = document.createElement('script');
+              s.src = url; s.async = true; s.setAttribute('data-ycy-sdk', '1');
+              var timer = setTimeout(function () { fail(new Error('SDK 載入逾時')); }, 15000);
+              function fail(err) { clearTimeout(timer); s.onload = s.onerror = null; s.remove(); reject(err); }
+              s.onload = function () {
+                clearTimeout(timer);
+                if (window.TencentCloudChat) resolve(window.TencentCloudChat); else fail(new Error('SDK 載入但找不到 TencentCloudChat'));
+              };
+              s.onerror = function () { fail(new Error('SDK 載入失敗：' + url)); };
+              document.head.appendChild(s);
+            });
+          };
+          state.sdkPromise = (function attempt(i, last) {
+            if (i >= 4) { state.sdkPromise = null; return Promise.reject(last); }
+            return once(SDK_URLS[i % SDK_URLS.length]).catch(function (e) {
+              return new Promise(function (r) { setTimeout(r, 500 * (i + 1)); }).then(function () { return attempt(i + 1, e); });
+            });
+          })(0, null);
           return state.sdkPromise;
         }
 
         /* ── 連線 ─────────────────────────────────────── */
         function connect() {
-          var raw = els.codeInput.value;
-          var parsed = parseConnectCode(raw);
+          var parsed = parseConnectCode(els.codeInput.value);
           if (!parsed) {
-            var fmtMsg = '連接碼格式不正確：需要「UID 空格 Token」，請從役次元 APP 重新複製。';
-            showConnectMsg(fmtMsg);
-            logMsg(fmtMsg, 'err');
-            return;
+            var fmtMsg = '連接碼格式不對：要是「UID 空格 Token」，UID 是數字。請從役次元 APP 重新複製。';
+            showConnectMsg(fmtMsg); logMsg(fmtMsg, 'err'); return;
           }
           state.uid = parsed.uid;
-          state.imId = parsed.uid.indexOf('game_') === 0 ? parsed.uid : 'game_' + parsed.uid;
+          state.imId = 'game_' + parsed.uid;
           state.token = parsed.token;
+          saveCC(parsed.uid + ' ' + parsed.token);
           showConnectMsg('');
           setStatus('connecting');
-          logMsg('開始連線：UID ' + maskUid(state.uid).replace('UID ', '') + '，向伺服器取得 IM 簽名…', 'info');
+          logMsg('開始連線：' + maskUid(state.uid) + '，Token ' + maskToken(state.token) + '，取得 IM 簽名…', 'info');
 
           state.watchdog = setTimeout(function () {
             if (state.status === 'connecting') {
-              var toMsg = '連線逾時（25 秒未完成），已取消。請確認網路與連接碼是否過期。';
-              showConnectMsg(toMsg);
-              logMsg(toMsg, 'err');
-              teardownChat();
-              setStatus('idle');
+              var m = '連線逾時（25 秒），已取消。請確認網路，或回 APP 重新開始遊戲。';
+              showConnectMsg(m); logMsg(m, 'err'); teardownChat(); setStatus('idle');
             }
           }, 25000);
 
-          // game_sign 要 uid、token 兩個分開的表單欄位；
-          // 傳單一 connect_code 欄位時伺服器會直接回 HTTP 500。
-          // uid 欄位要傳 game_ 前綴身分：伺服器會照傳入的字串簽 UserSig
-          // （2026-11-16 實測解碼驗證：傳 game_<uid>，簽出的 identifier 就是 game_<uid>），
-          // 而 APP 本身正是以 game_<uid> 這個身分登入 IM。網頁要用同一個身分
-          // 登入、把指令送給自己，APP 才收得到；只用裸 UID 登入時訊息送進了
-          // 另一個沒人監聽的身分，裝置不會動。只加一邊則會被騰訊以 70013 拒絕。
+          // 用表單格式（瀏覽器的 simple request，不觸發 CORS 預檢）；舊頁面 11-18 實測可用。
           var form = new URLSearchParams();
           form.append('uid', state.imId);
-          form.append('token', parsed.token);
-
-          fetch(SIGN_URL, { method: 'POST', body: form })
-            .then(function (res) {
-              return res.text().then(function (text) {
-                var json = null;
-                try { json = JSON.parse(text); } catch (e) {}
-                if (!res.ok) {
-                  var detail = json && json.msg ? json.msg : String(text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
-                  throw new Error('伺服器回應 HTTP ' + res.status + (detail ? '：' + detail : '（無回應內容）'));
-                }
-                if (!json) throw new Error('伺服器回應格式異常，無法解析。');
-                return json;
-              });
-            })
-            .then(function (json) {
-              if (!json || json.code !== 1) {
-                var msg = (json && json.msg) || '未知錯誤';
-                if (/不存在|失效|過期|过期/.test(msg)) {
-                  msg += '——這組連接碼對應的工作階段已不存在或已失效，請回 APP 重新啟動玩法、複製新的連接碼再連。';
-                }
-                throw new Error('game_sign 失敗：' + msg);
-              }
-              var appid = Number(json.data && json.data.appid);
-              var sign = json.data && json.data.sign;
-              if (!appid || !sign) throw new Error('game_sign 回傳缺少 appid 或 sign');
-              logMsg('已取得 IM 簽名（SDKAppID ' + appid + '），載入 SDK 並登入…', 'info');
-              return loadSDK().then(function (TC) {
-                startIM(TC, appid, sign);
-              });
-            })
-            .catch(function (err) {
-              clearTimeout(state.watchdog);
-              var failMsg = '連線失敗：' + (err && err.message ? err.message : err);
-              showConnectMsg(failMsg);
-              logMsg(failMsg, 'err');
-              teardownChat();
-              setStatus('idle');
+          form.append('token', state.token);
+          fetch(SIGN_URL, { method: 'POST', body: form }).then(function (res) {
+            return res.text().then(function (text) {
+              var json = null; try { json = JSON.parse(text); } catch (e) {}
+              if (!res.ok) throw new Error('伺服器回應 HTTP ' + res.status + (json && json.msg ? '：' + json.msg : ''));
+              if (!json) throw new Error('伺服器回應格式異常');
+              return json;
             });
+          }).then(function (json) {
+            if (json.code !== 1 || !json.data) throw new Error('取得簽名失敗：' + (json.msg || '未知錯誤'));
+            var appid = Number(json.data.appid), sign = json.data.sign;
+            if (!appid || !sign) throw new Error('簽名回應缺少 appid 或 sign');
+            logMsg('已取得簽名（SDKAppID ' + appid + '），登入 IM…', 'info');
+            return loadSDK().then(function (TC) { startIM(TC, appid, sign); });
+          }).catch(function (err) {
+            clearTimeout(state.watchdog);
+            var m = '連線失敗：' + (err && err.message ? err.message : err);
+            showConnectMsg(m); logMsg(m, 'err'); teardownChat(); setStatus('idle');
+          });
         }
 
         function startIM(TC, appid, sign) {
           teardownChat();
           var chat = TC.create({ SDKAppID: appid });
           state.chat = chat;
-          try { chat.setLogLevel(1); } catch (e) {}
+          try { chat.setLogLevel(4); } catch (e) {}
 
           chat.on(TC.EVENT.SDK_READY, function () {
             if (state.chat !== chat) return;
             clearTimeout(state.watchdog);
             setStatus('connected');
-            logMsg('IM 連線成功，已登入 ' + state.imId + '，可以送出指令。', 'ok');
+            logMsg('連線成功：' + state.imId + ' → 收件人 ' + state.uid + '。可以送指令了。', 'ok');
           });
-
+          // 被踢：不自動重連（同一 game_<uid> 兩端在線會互踢，重連會變成搶線）
           chat.on(TC.EVENT.KICKED_OUT, function (event) {
             if (state.chat !== chat) return;
             var type = event && event.data && event.data.type ? '（' + event.data.type + '）' : '';
-            showConnectMsg('連線被踢下線' + type + '：可能在其他地方登入了同一個帳號。');
-            logMsg('連線被踢下線' + type + '：可能在其他地方登入了同一個帳號，已標記為未連線。', 'err');
+            var m = '被踢下線' + type + '：另一個地方用同一組連接碼連線了（例如電腦）。本頁不會自動重連；確定另一邊已關閉，再按「連線」。';
+            showConnectMsg(m); logMsg(m, 'err');
             clearTimeout(state.watchdog);
             state.chat = null;
+            try { chat.destroy(); } catch (e) {}
             setStatus('idle');
           });
-
           chat.on(TC.EVENT.SDK_NOT_READY, function () {
             if (state.chat !== chat) return;
-            if (state.status === 'connected') logMsg('IM 連線中斷，SDK 嘗試自動重連中…', 'err');
+            if (state.status === 'connected') logMsg('IM 連線不穩，SDK 自動重試中…', 'err');
+          });
+          chat.on(TC.EVENT.MESSAGE_RECEIVED, function (event) {
+            (event.data || []).forEach(function (msg) {
+              var text = msg && msg.payload && msg.payload.text ? String(msg.payload.text) : '';
+              if (state.token) text = text.split(state.token).join(maskToken(state.token));
+              logMsg('收到訊息（' + msg.from + '）：' + text.slice(0, 300), 'info');
+            });
           });
 
-          // 登入身分必須和拿簽名時傳給 game_sign 的 uid 完全一致（game_ 前綴）；
-          // 不一致會被騰訊以 code 70013 拒絕（UserID 與 UserSig 不符）。
-          chat.login({ userID: String(state.imId), userSig: sign }).catch(function (err) {
+          chat.login({ userID: state.imId, userSig: sign }).catch(function (err) {
             if (state.chat !== chat) return;
             clearTimeout(state.watchdog);
-            var msg = err && (err.message || err.msg) ? (err.message || err.msg) : String(err);
             var code = err && err.code ? '（code ' + err.code + '）' : '';
-            if (err && err.code === 70013) {
-              msg += '——登入帳號與伺服器簽名不符，通常是連接碼已過期或換了工作階段，請回 APP 重新啟動玩法、複製新的連接碼再連。';
-            }
-            showConnectMsg('IM 登入失敗' + code + '：' + msg);
-            logMsg('IM 登入失敗' + code + '：' + msg, 'err');
-            teardownChat();
-            setStatus('idle');
+            var m = 'IM 登入失敗' + code + '：' + (err && (err.message || err.msg) || err);
+            showConnectMsg(m); logMsg(m, 'err'); teardownChat(); setStatus('idle');
           });
         }
 
@@ -612,14 +642,10 @@
           var chat = state.chat;
           state.chat = null;
           if (chat) {
-            try {
-              var p = chat.logout();
-              if (p && p.catch) p.catch(function () {});
-            } catch (e) {}
+            try { var p = chat.logout(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
             try { chat.destroy(); } catch (e) {}
           }
         }
-
         function disconnect(manual) {
           clearTimeout(state.watchdog);
           teardownChat();
@@ -627,135 +653,451 @@
           if (manual) logMsg('已斷線。', 'info');
         }
 
-        /* ── 遊戲類型模式 ─────────────────────────────── */
-        // 官方協定有兩種遊戲，指令格式完全不同，送錯格式 APP 會直接忽略：
-        // ・自定義遊戲（在 APP 內逐條編輯「指令配置」）：{"code":"game_info","data":序號}
-        //   序號 = 指令在 APP 配置清單中的位置，從 0 開始（官方 IM_basic.md／README）。
-        // ・開發遊戲（外部開發者）：{"code":"game_cmd","id":"指令ID"}。
-        function setMode(mode) {
-          state.mode = mode === 'dev' ? 'dev' : 'custom';
-          try { localStorage.setItem(LS_MODE_KEY, state.mode); } catch (e) {}
-          els.modeCustomBtn.classList.toggle('active', state.mode === 'custom');
-          els.modeDevBtn.classList.toggle('active', state.mode === 'dev');
-          els.cmdBtns.forEach(function (b) {
-            var sub = b.querySelector('.cmd-id');
-            if (!sub) return;
-            sub.textContent = state.mode === 'custom'
-              ? '序號 ' + b.getAttribute('data-idx')
-              : b.getAttribute('data-cmd');
-          });
-          els.freeIdInput.placeholder = state.mode === 'custom' ? '自訂序號（數字）' : '自訂指令 ID';
-        }
-
-        /* ── 送出指令 ─────────────────────────────────── */
-        function sendPayload(payloadObj, label) {
-          if (state.status !== 'connected' || !state.chat) {
-            logMsg('尚未連線，無法送出指令「' + label + '」。', 'err');
-            return;
+        /* ── 送訊佇列：一次一則；停止插隊並清掉排隊中的動作 ── */
+        function isStopId(id) { return id === CUP_STOP || id === SHOCK_STOP || id === '_stop_all'; }
+        // 停止指令一律插隊：清掉排隊中的「動作」指令，排在已排隊的停止指令後面。
+        function enqueue(id, label) {
+          if (state.status !== 'connected' || !state.chat) { logMsg('尚未連線，無法送出「' + label + '」。', 'err'); return; }
+          var item = { id: id, label: label, stop: isStopId(id) };
+          if (item.stop) {
+            var before = state.queue.length;
+            state.queue = state.queue.filter(function (q) { return q.stop; });
+            var dropped = before - state.queue.length;
+            if (dropped) logMsg('停止插隊：取消 ' + dropped + ' 則排隊中的動作指令。', 'info');
           }
+          state.queue.push(item);
+          pump();
+        }
+        function enqueueStops(ids, label) {
+          ids.forEach(function (id) { enqueue(id, label + '：' + id); });
+        }
+        function pump() {
+          if (state.sending || !state.queue.length) return;
+          if (state.status !== 'connected' || !state.chat) { state.queue = []; return; }
+          var item = state.queue.shift();
+          state.sending = true;
+          sendNow(item).then(function () { state.sending = false; pump(); });
+        }
+        function sendNow(item) {
           var TC = window.TencentCloudChat;
+          var shown = JSON.stringify({ code: 'game_cmd', id: item.id, token: maskToken(state.token) });
           var message;
           try {
-            // 收件人必須是裸 UID（APP 本人的 IM 身分），不是寄件人自己。
-            // 官方 demo 的設計是不對稱的：寄件人 game_<uid> → 收件人 <uid>。
-            // 寄給 game_<uid> 等於自己寄給自己，APP 收不到，裝置不會動。
             message = state.chat.createTextMessage({
-              to: String(state.uid),
+              to: String(state.uid),                       // 收件人：裸 UID
               conversationType: TC.TYPES.CONV_C2C,
-              payload: { text: JSON.stringify(payloadObj) }
+              payload: { text: JSON.stringify({ code: 'game_cmd', id: item.id, token: state.token }) }
             });
           } catch (e) {
-            logMsg('建立訊息失敗（' + label + '）：' + (e && e.message ? e.message : e), 'err');
-            return;
+            logMsg('建立訊息失敗（' + item.label + '）：' + (e && e.message ? e.message : e), 'err');
+            return Promise.resolve();
           }
-          var summaryObj = {};
-          Object.keys(payloadObj).forEach(function (k) {
-            summaryObj[k] = k === 'token' ? maskToken(state.token) : payloadObj[k];
-          });
-          var summary = JSON.stringify(summaryObj);
-          state.chat.sendMessage(message).then(function () {
-            logMsg('送出 ▶ ' + label + '（' + state.imId + ' → ' + state.uid + '）　' + summary, 'send');
+          return state.chat.sendMessage(message).then(function (r) {
+            var m = (r && r.data && r.data.message) || message;
+            logMsg('送出 ▶ ' + item.label + '　' + shown + '　msgID ' + (m.ID || '?'), 'send');
           }).catch(function (err) {
-            var msg = err && (err.message || err.msg) ? (err.message || err.msg) : String(err);
-            logMsg('送出失敗 ✕ ' + label + '：' + msg + '　' + summary, 'err');
+            logMsg('送出失敗 ✕ ' + item.label + '：' + (err && (err.message || err.msg) || err) + '　' + shown, 'err');
           });
         }
 
-        function sendButtonCmd(btn) {
-          var name = btn.getAttribute('data-cmd');
-          if (state.mode === 'custom') {
-            var idx = parseInt(btn.getAttribute('data-idx'), 10);
-            if (isNaN(idx)) {
-              logMsg('按鈕「' + name + '」沒有設定序號，無法送出。', 'err');
-              return;
-            }
-            sendPayload({ code: 'game_info', data: idx, token: state.token }, name + '（序號 ' + idx + '）');
+        /* ── 按鈕行為 ─────────────────────────────────── */
+        function onCmd(btn) {
+          var id = btn.getAttribute('data-cmd');
+          if (btn.classList.contains('cup-move')) {
+            if (state.rest) { logMsg('休息中，杯子指令「' + id + '」沒有送出。', 'rest'); return; }
+            if (syncDriving()) { logMsg('影片同步中，杯子由時間軸控制，「' + id + '」沒有送出。', 'info'); return; }
+            state.lastCup = id;
+            enqueue(id, '杯子 ' + id);
+          } else if (id === CUP_STOP) {
+            state.lastCup = null;                          // 主動停杯：之後休息不恢復
+            if (state.rest) cancelRest('按了設備停止，休息結束，不恢復');
+            if (syncDriving()) pauseVideo('按了設備停止，影片暫停');
+            enqueue(id, '杯子 ' + id);
+          } else if (btn.classList.contains('shock')) {
+            if (Date.now() < state.shockCooldownUntil) return;
+            state.shockCooldownUntil = Date.now() + SHOCK_COOLDOWN_MS;
+            setTimeout(refreshButtons, SHOCK_COOLDOWN_MS + 50);
+            enqueue(id, '⚡ 電擊 ' + id);
+          } else if (id === SHOCK_STOP) {
+            sync.shockCmd = null;
+            enqueue(id, '電擊 ' + id);
+          }
+          refreshButtons();
+        }
+
+        function stopAll() {
+          if (state.rest) cancelRest('按了全部停止，休息結束，不恢復');
+          pauseVideo('按了全部停止，影片暫停');
+          sync.shockCmd = null;
+          state.lastCup = null;
+          enqueueStops([CUP_STOP, SHOCK_STOP, '_stop_all'], '全部停止');
+          refreshButtons();
+        }
+
+        /* ── 休息 ─────────────────────────────────────── */
+        function startRest() {
+          if (state.status !== 'connected' || state.rest) return;
+          var secs = parseInt(els.restSecs.value, 10) || 15;
+          var bySync = syncEnabled();
+          var resume = bySync ? null : state.lastCup;      // 手動模式：記住休息前最後一條杯子指令
+          state.rest = { endAt: Date.now() + secs * 1000, resume: resume, bySync: bySync, timer: null };
+          enqueue(CUP_STOP, '休息：杯子 ' + CUP_STOP);
+          if (bySync) {
+            logMsg('開始休息 ' + secs + ' 秒（影片同步中：影片照播，結束後送影片當下段落的指令）', 'rest');
+            els.restResumeText.textContent = '時間到會恢復影片當下段落的指令';
+            els.restResumeNowBtn.textContent = '提早結束並恢復';
           } else {
-            sendPayload({ code: 'game_cmd', id: name, token: state.token }, name);
+            logMsg('開始休息 ' + secs + ' 秒' + (resume ? '，結束後恢復「' + resume + '」' : '，休息前沒有進行中的杯子指令，結束後不恢復'), 'rest');
+            els.restResumeText.textContent = resume ? '時間到會恢復：' + resume : '時間到不會恢復（休息前沒有杯子指令在跑）';
+            els.restResumeNowBtn.textContent = resume ? '提早結束並恢復' : '提早結束';
+          }
+          els.restPanel.classList.add('visible');
+          tickRest();
+          state.rest.timer = setInterval(tickRest, 250);
+          refreshButtons();
+        }
+        function tickRest() {
+          if (!state.rest) return;
+          var left = Math.max(0, Math.ceil((state.rest.endAt - Date.now()) / 1000));
+          els.restCountdown.textContent = left + ' 秒';
+          if (Date.now() >= state.rest.endAt) finishRest(true);
+        }
+        function finishRest(doResume) {
+          var r = state.rest;
+          if (!r) return;
+          clearInterval(r.timer);
+          state.rest = null;
+          els.restPanel.classList.remove('visible');
+          refreshButtons();
+          if (r.bySync) {
+            if (doResume && syncDriving() && sync.cupCmd && sync.cupCmd !== CUP_STOP) {
+              logMsg('休息結束，恢復影片當下段落的「' + sync.cupCmd + '」', 'rest');
+              sendCup(sync.cupCmd, '休息結束恢復');
+            } else {
+              logMsg('休息結束' + (doResume ? '（影片沒在播放，或當下段落是停止，不恢復）' : '，依指示不恢復') + '。', 'rest');
+            }
+            return;
+          }
+          if (doResume && r.resume && state.status === 'connected') {
+            state.lastCup = r.resume;
+            logMsg('休息結束，恢復「' + r.resume + '」（只送一次）', 'rest');
+            enqueue(r.resume, '休息結束恢復：杯子 ' + r.resume);
+            refreshButtons();
+          } else {
+            logMsg('休息結束' + (r.resume ? '，依指示不恢復' : '') + '。', 'rest');
           }
         }
+        function cancelRest(reason) {
+          if (!state.rest) return;
+          clearInterval(state.rest.timer);
+          state.rest = null;
+          els.restPanel.classList.remove('visible');
+          logMsg(reason + '。', 'rest');
+          refreshButtons();
+        }
+
+        /* ── 影片同步 ─────────────────────────────────── */
+        // 時間軸 v3.1（2026-11-18 Claude 逐段比對畫面浮標與字幕修正，影片長 1704.9 秒）。
+        // 規則（使用者 2026-11-18）：杯子只跟擼動類（慢/中/快/极快、龜頭責、寸止射精）走；電擊只在浮標是「拍打」時介入。
+        // 「拍打」= 純拍打（處罰，不准擼，杯子停）；「撸动+拍打」= 一邊擼一邊打（杯子＋電擊同時）。
+        // 26:51–27:04 字幕「那隻手用力打」指的是擼的手，浮標仍是极快，所以不算拍打。
+        // 與 Muse v1 的差異見 YCY_B_IM測試/時間軸核對_2026-11-18.md。邊界誤差約 ±2 秒。
+        var TIMELINE_DURATION = 1704.9;
+        var SEGS = [
+          [0, 42, '片頭'], [42, 61.5, '慢速'], [61.5, 77, '中速'], [77, 97, '快速'], [97, 121, '慢速'],
+          [121, 171, '中速'], [171, 176, '快速'], [176, 296, '极快'], [296, 350, '准备'], [350, 414, '拍打'],
+          [414, 559.5, '停止'], [559.5, 611.5, '撸动'], [611.5, 647, '停止'], [647, 797.5, '龟头责'], [797.5, 833, '停止'],
+          [833, 1147.5, '撸动+拍打'], [1147.5, 1179, '极快'], [1179, 1335.5, '寸止'], [1335.5, 1365, '高速'], [1365, 1386.5, '寸止'],
+          [1386.5, 1398.5, '慢速'], [1398.5, 1405, '寸止'], [1405, 1426, '中速'], [1426, 1508, '寸止'], [1508, 1526.5, '慢速'],
+          [1526.5, 1551, '中速'], [1551, 1597, '快速'], [1597, 1669, '极快'],
+          [1669, 1695, '射精'], [1695, 1705, '結束']
+        ].map(function (a) { return { start: a[0], end: a[1], mode: a[2] }; });
+        var MODES = ['片頭', '慢速', '中速', '快速', '高速', '极快', '寸止', '龟头责', '撸动', '准备', '停止',
+                     '拍打', '撸动+拍打', '射精', '結束'];
+        var CUP_NONE = '__none';                           // 不送任何杯子指令（之前的指令照跑到 APP 設定的秒數）
+        var CUP_OPTS = ['伸縮慢', '伸縮中', '伸縮极快', '龜頭責', '寸止射精', CUP_STOP, CUP_NONE];   // 只留 APP 裡實際有的杯子指令
+        var SHOCK_OPTS = [['off', '電擊：不電'], ['拍打弱', '⚡ 拍打弱'], ['拍打中', '⚡ 拍打中'], ['拍打強', '⚡ 拍打強']];
+        var DEFAULT_MAP = {
+          cup: {
+            '片頭': CUP_STOP, '慢速': '伸縮慢', '中速': '伸縮中', '快速': '伸縮极快', '高速': '伸縮极快', '极快': '伸縮极快',
+            '寸止': '寸止射精', '龟头责': '龜頭責', '撸动': '伸縮中', '准备': CUP_NONE, '停止': CUP_STOP,
+            '拍打': CUP_STOP, '撸动+拍打': '伸縮中', '射精': '寸止射精', '結束': CUP_STOP
+          },
+          // 電擊只在浮標是「拍打」的段落介入，預設最弱，可在「段落對應的指令」改成中／強或關閉
+          shock: { '拍打': '拍打弱', '撸动+拍打': '拍打弱' }
+        };
+        var MAP_KEY = 'ycy_sync_map_v7';                  // 2026-11-18：新增龜頭責／寸止射精；電擊只跟拍打
+        var URL_KEY = 'ycy_video_url_v1';
+        var KEEPALIVE_MS = 50000;                         // APP 每條指令跑 60 秒，50 秒續送一次
+        var HLS_URL = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js';
+
+        var video = document.getElementById('video');
+        var sEls = {
+          url: document.getElementById('videoUrl'), loadUrl: document.getElementById('loadUrlBtn'),
+          file: document.getElementById('videoFile'), warn: document.getElementById('videoWarn'),
+          on: document.getElementById('syncOn'), lead: document.getElementById('leadSecs'),
+          nowSeg: document.getElementById('nowSeg'), nowCmd: document.getElementById('nowCmd'),
+          nextSeg: document.getElementById('nextSeg'), mapGrid: document.getElementById('mapGrid'),
+          segList: document.getElementById('segList')
+        };
+        var sync = { idx: -2, cupCmd: null, cupSentAt: 0, shockCmd: null, shockSentAt: 0, hls: null, objUrl: null };
+        var syncMap = (function () {
+          var m = { cup: {}, shock: {} };
+          MODES.forEach(function (k) { m.cup[k] = DEFAULT_MAP.cup[k] || CUP_STOP; m.shock[k] = DEFAULT_MAP.shock[k] || 'off'; });
+          try {
+            var saved = JSON.parse(localStorage.getItem(MAP_KEY) || 'null');
+            if (saved && saved.cup && saved.shock) MODES.forEach(function (k) {
+              if (CUP_OPTS.indexOf(saved.cup[k]) >= 0) m.cup[k] = saved.cup[k];
+              if (SHOCK_OPTS.some(function (o) { return o[0] === saved.shock[k]; })) m.shock[k] = saved.shock[k];
+            });
+          } catch (e) {}
+          return m;
+        })();
+        function cupLabel(c) { return c === CUP_NONE ? '不送指令' : c; }
+
+        function mmss(s) { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+        function syncEnabled() { return !!(sEls.on && sEls.on.checked); }
+        function syncDriving() { return syncEnabled() && video && !video.paused && !video.ended && state.status === 'connected'; }
+        function segIndexAt(t) {
+          for (var i = 0; i < SEGS.length; i++) if (t >= SEGS[i].start && t < SEGS[i].end) return i;
+          return -1;
+        }
+        function cupFor(seg) { return syncMap.cup[seg.mode] || CUP_STOP; }
+        function shockFor(seg) { var s = syncMap.shock[seg.mode]; return s && s !== 'off' ? s : null; }
+
+        function sendCup(cmd, why) {
+          sync.cupCmd = cmd;
+          sync.cupSentAt = Date.now();
+          if (state.status !== 'connected') return;
+          if (state.rest && cmd !== CUP_STOP) { logMsg('休息中，略過同步杯子指令「' + cmd + '」（' + why + '）', 'rest'); return; }
+          state.lastCup = cmd === CUP_STOP ? null : cmd;
+          enqueue(cmd, '同步 ' + why + '：杯子 ' + cmd);
+          refreshButtons();
+        }
+        function sendShock(cmd, why) {
+          sync.shockCmd = cmd;
+          sync.shockSentAt = Date.now();
+          if (state.status !== 'connected') return;
+          enqueue(cmd, '同步 ' + why + '：⚡ 電擊 ' + cmd);
+        }
+        function stopShockIfActive(why) {
+          if (!sync.shockCmd) return;
+          sync.shockCmd = null;
+          if (state.status === 'connected') enqueue(SHOCK_STOP, '同步 ' + why + '：電擊停止');
+        }
+        function applySegment(i, why) {
+          sync.idx = i;
+          var seg = SEGS[i];
+          if (!seg) { stopShockIfActive(why); sendCup(CUP_STOP, why); paintNow(); return; }
+          var shock = shockFor(seg);
+          if (!shock) stopShockIfActive(why);
+          var cup = cupFor(seg);
+          if (cup === CUP_NONE) {
+            sync.cupCmd = null;                            // 不送、不續送
+            logMsg('同步 ' + why + ' 第 ' + (i + 1) + ' 段「' + seg.mode + '」：杯子不送指令', 'info');
+          } else {
+            sendCup(cup, why + ' 第 ' + (i + 1) + ' 段「' + seg.mode + '」');
+          }
+          if (shock && sync.shockCmd !== shock) sendShock(shock, '第 ' + (i + 1) + ' 段');
+          paintNow();
+        }
+        function haltSync(why) {
+          var wasActive = sync.idx !== -2 || sync.shockCmd;
+          sync.idx = -2;
+          if (!wasActive || state.status !== 'connected') { sync.cupCmd = null; sync.shockCmd = null; paintNow(); return; }
+          stopShockIfActive(why);
+          sendCup(CUP_STOP, why);
+          sync.cupCmd = null;
+          paintNow();
+        }
+        function pauseVideo(why) {
+          if (video && !video.paused) { logMsg(why + '。', 'info'); video.pause(); }
+        }
+        function tick() {
+          if (!syncDriving()) { paintNow(); return; }
+          var lead = parseFloat(sEls.lead.value) || 0;
+          var i = segIndexAt(video.currentTime + lead);
+          if (i !== sync.idx) { applySegment(i, sync.idx === -2 ? '開始' : '換段'); return; }
+          var now = Date.now();
+          if (sync.cupCmd && sync.cupCmd !== CUP_STOP && !state.rest && now - sync.cupSentAt > KEEPALIVE_MS) sendCup(sync.cupCmd, '續送');
+          if (sync.shockCmd && now - sync.shockSentAt > KEEPALIVE_MS) sendShock(sync.shockCmd, '續送');
+          paintNow();
+        }
+        var lastPaintIdx = null;
+        function paintNow() {
+          var t = video ? video.currentTime || 0 : 0;
+          var i = segIndexAt(t);
+          var seg = SEGS[i];
+          if (!seg) {
+            sEls.nowSeg.textContent = t > 0 ? '影片已超過時間軸' : '—';
+          } else {
+            sEls.nowSeg.textContent = '第 ' + (i + 1) + '/' + SEGS.length + ' 段　' + seg.mode + '　' + mmss(seg.start) + '–' + mmss(seg.end);
+          }
+          if (!syncEnabled()) sEls.nowCmd.textContent = '同步沒開：設備不會跟著影片動。';
+          else if (state.status !== 'connected') sEls.nowCmd.textContent = '還沒連線：先在上面按「連線」。';
+          else if (!syncDriving()) sEls.nowCmd.textContent = '已開啟同步，按播放開始。';
+          else {
+            var shock = seg ? shockFor(seg) : null;
+            var cupTxt = sync.cupCmd || (seg && cupFor(seg) === CUP_NONE ? '不送指令' : '—');
+            sEls.nowCmd.textContent = '杯子：' + cupTxt + (state.rest ? '（休息中）' : '') + (shock ? '　電擊：' + shock : '');
+          }
+          var next = SEGS[i + 1];
+          sEls.nextSeg.textContent = seg && next ? '下一段「' + next.mode + '」還有 ' + Math.max(0, Math.ceil(next.start - t)) + ' 秒' : '';
+          if (i !== lastPaintIdx) {
+            lastPaintIdx = i;
+            Array.prototype.forEach.call(sEls.segList.children, function (row, k) { row.classList.toggle('cur', k === i); });
+          }
+        }
+        function buildMapUI() {
+          sEls.mapGrid.innerHTML = '';
+          MODES.forEach(function (mode) {
+            var lab = document.createElement('span'); lab.textContent = mode;
+            var box = document.createElement('div'); box.className = 'map-pair';
+            var sel = document.createElement('select');
+            CUP_OPTS.forEach(function (c) { var o = document.createElement('option'); o.value = c; o.textContent = '杯子：' + cupLabel(c); sel.appendChild(o); });
+            sel.value = syncMap.cup[mode];
+            sel.addEventListener('change', function () { syncMap.cup[mode] = sel.value; saveMap(); });
+            var sel2 = document.createElement('select');
+            SHOCK_OPTS.forEach(function (o) { var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; sel2.appendChild(op); });
+            sel2.value = syncMap.shock[mode];
+            sel2.addEventListener('change', function () { syncMap.shock[mode] = sel2.value; saveMap(); });
+            box.appendChild(sel); box.appendChild(sel2);
+            sEls.mapGrid.appendChild(lab); sEls.mapGrid.appendChild(box);
+          });
+        }
+        function saveMap() {
+          try { localStorage.setItem(MAP_KEY, JSON.stringify(syncMap)); } catch (e) {}
+          logMsg('段落對應已更新' + (syncDriving() ? '，馬上套用到目前段落' : '') + '。', 'info');
+          if (syncDriving()) sync.idx = -3;               // 強制下一個 tick 重新套用
+        }
+        function buildSegList() {
+          sEls.segList.innerHTML = '';
+          SEGS.forEach(function (s, k) {
+            var row = document.createElement('div');
+            var tm = document.createElement('span'); tm.className = 'tm'; tm.textContent = mmss(s.start) + '–' + mmss(s.end);
+            var md = document.createElement('span'); md.textContent = (k + 1) + '. ' + s.mode;
+            row.appendChild(tm); row.appendChild(md);
+            row.addEventListener('click', function () { if (video.readyState > 0) video.currentTime = s.start + 0.05; });
+            sEls.segList.appendChild(row);
+          });
+        }
+
+        function showVideoWarn(t) { sEls.warn.textContent = t || ''; sEls.warn.hidden = !t; }
+        function resetSource() {
+          if (sync.hls) { try { sync.hls.destroy(); } catch (e) {} sync.hls = null; }
+          if (sync.objUrl) { URL.revokeObjectURL(sync.objUrl); sync.objUrl = null; }
+          showVideoWarn('');
+        }
+        function loadHlsLib() {
+          if (window.Hls) return Promise.resolve(window.Hls);
+          return new Promise(function (resolve, reject) {
+            var s = document.createElement('script');
+            s.src = HLS_URL;
+            s.onload = function () { window.Hls ? resolve(window.Hls) : reject(new Error('hls.js 載入失敗')); };
+            s.onerror = function () { s.remove(); reject(new Error('hls.js 載入失敗')); };
+            document.head.appendChild(s);
+          });
+        }
+        function loadVideoUrl(url) {
+          url = (url || '').trim();
+          if (!url) return;
+          pauseVideo('換影片，先暫停');
+          resetSource();
+          try { localStorage.setItem(URL_KEY, url); } catch (e) {}
+          var isHls = /\.m3u8(\?|#|$)/i.test(url) || /m3u8/i.test(url);
+          if (isHls && !video.canPlayType('application/vnd.apple.mpegurl')) {
+            loadHlsLib().then(function (Hls) {
+              if (!Hls.isSupported()) { showVideoWarn('這個瀏覽器不支援 HLS 串流，請改用電腦版 Chrome。'); return; }
+              var hls = new Hls();
+              sync.hls = hls;
+              hls.on(Hls.Events.ERROR, function (ev, data) {
+                if (data && data.fatal) showVideoWarn('影片連結載入失敗（' + (data.details || data.type) + '）。可能是網站暫時故障或連結失效，可改用「選擇影片檔」。');
+              });
+              hls.loadSource(url);
+              hls.attachMedia(video);
+              logMsg('已載入影片連結（HLS 串流）。', 'info');
+            }).catch(function (e) { showVideoWarn(e.message); });
+          } else {
+            video.src = url;
+            logMsg('已載入影片連結。', 'info');
+          }
+        }
+
+        video.addEventListener('loadedmetadata', function () {
+          var d = video.duration;
+          if (isFinite(d) && Math.abs(d - TIMELINE_DURATION) > 3) {
+            showVideoWarn('注意：這支影片長 ' + mmss(d) + '，時間軸是 ' + mmss(TIMELINE_DURATION) + '，可能不是同一個版本，動作會對不上。');
+          }
+          paintNow();
+        });
+        video.addEventListener('error', function () {
+          if (!sync.hls) showVideoWarn('影片無法播放：格式不支援或連結失效。');
+        });
+        video.addEventListener('play', function () { sync.idx = -2; refreshButtons(); tick(); });
+        video.addEventListener('pause', function () { if (syncEnabled()) haltSync('影片暫停'); refreshButtons(); });
+        video.addEventListener('ended', function () { if (syncEnabled()) haltSync('影片結束'); refreshButtons(); });
+        video.addEventListener('seeking', function () { if (syncDriving()) sync.idx = -3; });
+        sEls.on.addEventListener('change', function () {
+          if (sEls.on.checked) { logMsg('已開啟影片同步。', 'info'); sync.idx = -2; tick(); }
+          else { haltSync('關閉同步'); logMsg('已關閉影片同步。', 'info'); }
+          refreshButtons();
+        });
+        sEls.loadUrl.addEventListener('click', function () { loadVideoUrl(sEls.url.value); });
+        sEls.url.addEventListener('keydown', function (e) { if (e.key === 'Enter') loadVideoUrl(sEls.url.value); });
+        sEls.file.addEventListener('change', function () {
+          var f = sEls.file.files && sEls.file.files[0];
+          if (!f) return;
+          if (/\.m3u8$/i.test(f.name)) { showVideoWarn('.m3u8 是串流清單，不能從檔案開，請改貼連結。'); return; }
+          pauseVideo('換影片，先暫停');
+          resetSource();
+          sync.objUrl = URL.createObjectURL(f);
+          video.src = sync.objUrl;
+          logMsg('已載入本機影片檔（不會上傳）。', 'info');
+        });
+        try { var savedUrl = localStorage.getItem(URL_KEY); if (savedUrl) sEls.url.value = savedUrl; } catch (e) {}
+        buildMapUI();
+        buildSegList();
+        setInterval(tick, 250);
 
         /* ── 事件綁定 ─────────────────────────────────── */
         els.connectBtn.addEventListener('click', connect);
         els.disconnectBtn.addEventListener('click', function () { disconnect(true); });
-        els.modeCustomBtn.addEventListener('click', function () { setMode('custom'); });
-        els.modeDevBtn.addEventListener('click', function () { setMode('dev'); });
-        els.stopBtn.addEventListener('click', function () {
-          sendPayload({ code: 'game_cmd', id: '_stop_all', token: state.token }, '全部停止 _stop_all');
+        els.forgetBtn.addEventListener('click', function () {
+          clearCC(); els.codeInput.value = ''; els.ccAge.hidden = true; clearInterval(ccTimer);
+          logMsg('已清除這個頁面記住的連接碼。', 'info');
         });
-        els.cmdBtns.forEach(function (b) {
-          b.addEventListener('click', function () { sendButtonCmd(b); });
-        });
-        function sendFree() {
-          var v = els.freeIdInput.value.trim();
-          if (!v) {
-            logMsg(state.mode === 'custom' ? '請先輸入序號。' : '請先輸入指令 ID。', 'err');
-            return;
-          }
-          if (state.mode === 'custom') {
-            if (!/^\d+$/.test(v)) {
-              logMsg('自定義遊戲模式下請輸入序號（0 以上的整數）。', 'err');
-              return;
-            }
-            var n = parseInt(v, 10);
-            sendPayload({ code: 'game_info', data: n, token: state.token }, '序號 ' + n);
-          } else {
-            sendPayload({ code: 'game_cmd', id: v, token: state.token }, v);
-          }
-        }
-        els.freeSendBtn.addEventListener('click', sendFree);
-        els.freeIdInput.addEventListener('keydown', function (e) {
-          if (e.key === 'Enter') sendFree();
-        });
-        els.codeInput.addEventListener('keydown', function (e) {
-          if (e.key === 'Enter' && state.status === 'idle') connect();
-        });
+        els.stopAllBtn.addEventListener('click', stopAll);
+        els.restBtn.addEventListener('click', startRest);
+        els.restResumeNowBtn.addEventListener('click', function () { finishRest(true); });
+        els.restCancelBtn.addEventListener('click', function () { finishRest(false); });
+        els.cmdBtns.forEach(function (b) { b.addEventListener('click', function () { onCmd(b); }); });
+        els.codeInput.addEventListener('keydown', function (e) { if (e.key === 'Enter' && state.status === 'idle') connect(); });
 
-        /* ── 啟動：讀取連接碼（GET 參數優先，其次快取） ── */
+        /* ── 啟動：先清網址，再載入任何第三方腳本 ──── */
         (function init() {
-          var params = new URLSearchParams(window.location.search);
-          var fromUrl = params.get('connect_code');
-          if (!fromUrl) {
-            var u = params.get('uid');
-            var t = params.get('token');
-            if (u && t) fromUrl = u + ' ' + t;
-          }
-          var cached = null;
-          try { cached = localStorage.getItem(LS_KEY); } catch (e) {}
-
+          OLD_LS_KEYS.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+          var fromUrl = readAndScrubURL();
           if (fromUrl) {
             els.codeInput.value = fromUrl;
-            try { localStorage.setItem(LS_KEY, fromUrl); } catch (e) {}
-            logMsg('已從啟動連結取得連接碼' + (parseConnectCode(fromUrl) ? '' : '，但格式似乎不完整') + '，按「連線」開始。', 'info');
-          } else if (cached) {
-            els.codeInput.value = cached;
-            logMsg('已載入上次快取的連接碼，按「連線」開始（若玩法重開過，請換上新的連接碼）。', 'info');
+            saveCC(fromUrl);
+            showCCAge('APP 啟動連結（已從網址列清除）', Date.now());
+            logMsg('已從 APP 啟動連結取得連接碼，按「連線」開始。', 'info');
+          } else {
+            var c = loadCC();
+            if (c) {
+              els.codeInput.value = c.v;
+              showCCAge('這次開啟頁面時記住的', c.t);
+              logMsg('已載入這次開啟頁面時記住的連接碼，按「連線」開始。', 'info');
+            }
           }
-          var savedMode = null;
-          try { savedMode = localStorage.getItem(LS_MODE_KEY); } catch (e) {}
-          setMode(savedMode === 'dev' ? 'dev' : 'custom');
           setStatus('idle');
         })();
+
+        // 給本機測試用的唯讀狀態（不含 token）
+        window.__ycyDebug = function () {
+          return { status: state.status, lastCup: state.lastCup, resting: !!state.rest,
+                   restResume: state.rest && state.rest.resume, queue: state.queue.map(function (q) { return q.id; }) };
+        };
       })();
     </script>
   </body>
